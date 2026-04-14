@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Проект "Комменты"</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <ul class="comments">
+      </ul>
+      <div class="add-form">
+        <input
+          type="text"
+          class="add-form-name"
+          placeholder="Введите ваше имя"
+        />
+        <textarea
+          type="textarea"
+          class="add-form-text"
+          placeholder="Введите ваш коментарий"
+          rows="4"
+        ></textarea>
+        <div class="add-form-row">
+          <button class="add-form-button">Написать</button>
+        </div>
+      </div>
+    </div>
+  </body>
+
+  <script>
+
+let comments = [
+  {
+    name: "Глеб Фокин",
+    date: "12.02.22 12:18",
+    text: "Это будет первый комментарий на этой странице",
+    likes: 3,
+    isLiked: false
+  },
+  {
+    name: "Варвара Н.",
+    date: "13.02.22 19:22",
+    text: "Мне нравится как оформлена эта страница! ❤",
+    likes: 75,
+    isLiked: true
+  }
+];
+
+const nameInput = document.querySelector('.add-form-name');
+const textInput = document.querySelector('.add-form-text');
+const addButton = document.querySelector('.add-form-button');
+const commentsList = document.querySelector('.comments');
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const htmlEscapes = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return str.replace(/[&<>"']/g, match => htmlEscapes[match]);
+}
+
+function getCurrentDateTime() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = String(now.getFullYear()).slice(2);
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${day}.${month}.${year} ${hours}:${minutes}`;
+}
+
+function handleLikeClick(event) {
+  event.stopPropagation();
+  
+  const button = event.currentTarget;
+  const commentIndex = parseInt(button.getAttribute('data-like-button'));
+  
+  if (comments[commentIndex].isLiked) {
+    comments[commentIndex].isLiked = false;
+    comments[commentIndex].likes -= 1;
+  } else {
+    comments[commentIndex].isLiked = true;
+    comments[commentIndex].likes += 1;
+  }
+  
+  renderComments();
+}
+
+function handleCommentClick(event) {
+  const commentElement = event.currentTarget;
+  const commentIndex = parseInt(commentElement.getAttribute('data-comment-index'));
+  const comment = comments[commentIndex];
+  
+  if (comment) {
+    const authorName = escapeHtml(comment.name);
+    const commentText = escapeHtml(comment.text);
+
+    nameInput.value = authorName;
+
+    const quotedText = commentText
+      .split('\n')
+      .map(line => `> ${line}`)
+      .join('\n');
+
+    const currentText = textInput.value;
+    if (currentText.trim() === '') {
+      textInput.value = quotedText + '\n\n';
+    } else {
+      textInput.value = quotedText + '\n\n' + currentText;
+    }
+
+    textInput.focus();
+
+    commentElement.style.transform = 'scale(0.99)';
+    setTimeout(() => {
+      commentElement.style.transform = '';
+    }, 150);
+  }
+}
+
+function validateForm() {
+  const name = nameInput.value.trim();
+  const text = textInput.value.trim();
+  
+  if (name === '') {
+    alert('Пожалуйста, введите ваше имя');
+    nameInput.focus();
+    return false;
+  }
+  
+  if (text === '') {
+    alert('Пожалуйста, введите текст комментария');
+    textInput.focus();
+    return false;
+  }
+  
+  return true;
+}
+
+function addComment() {
+  if (!validateForm()) {
+    return;
+  }
+
+  let name = nameInput.value.trim();
+  let text = textInput.value.trim();
+
+  name = escapeHtml(name);
+  text = escapeHtml(text);
+  
+  const newComment = {
+    name: name,
+    date: getCurrentDateTime(),
+    text: text,
+    likes: 0,
+    isLiked: false
+  };
+  
+  comments.push(newComment);
+
+  nameInput.value = '';
+  textInput.value = '';
+
+  renderComments();
+
+  setTimeout(() => {
+    const newCommentElement = document.querySelector(`.comment:last-child`);
+    if (newCommentElement) {
+      newCommentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
+}
+
+function renderComments() {
+  let commentsHTML = '';
+  
+  for (let i = 0; i < comments.length; i++) {
+    const comment = comments[i];
+    const likeButtonClass = comment.isLiked ? 'like-button -active-like' : 'like-button';
+    
+    commentsHTML += `
+      <li class="comment" data-comment-index="${i}">
+        <div class="comment-header">
+          <div>${escapeHtml(comment.name)}</div>
+          <div>${comment.date}</div>
+        </div>
+        <div class="comment-body">
+          <div class="comment-text">
+            ${formatCommentText(escapeHtml(comment.text))}
+          </div>
+        </div>
+        <div class="comment-footer">
+          <div class="likes">
+            <span class="likes-counter">${comment.likes}</span>
+            <button class="${likeButtonClass}" data-like-button="${i}"></button>
+          </div>
+        </div>
+      </li>
+    `;
+  }
+  
+  commentsList.innerHTML = commentsHTML;
+
+  const likeButtons = document.querySelectorAll('[data-like-button]');
+  for (let button of likeButtons) {
+    button.addEventListener('click', handleLikeClick);
+  }
+
+  const commentElements = document.querySelectorAll('.comment');
+  for (let element of commentElements) {
+    element.addEventListener('click', handleCommentClick);
+  }
+}
+
+function formatCommentText(text) {
+  const lines = text.split('\n');
+  let formattedLines = [];
+  
+  for (let line of lines) {
+    if (line.startsWith('> ')) {
+      formattedLines.push(`<span class="quote">${line}</span>`);
+    } else if (line === '') {
+      formattedLines.push('<br>');
+    } else {
+      formattedLines.push(line);
+    }
+  }
+  
+  return formattedLines.join('<br>');
+}
+
+addButton.addEventListener('click', addComment);
+
+textInput.addEventListener('keydown', (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    addComment();
+  }
+});
+
+nameInput.addEventListener('input', () => {
+  console.log('Имя изменено:', nameInput.value);
+});
+
+textInput.addEventListener('input', () => {
+  console.log('Текст изменен');
+});
+
+renderComments();
+
+console.log("Приложение загружено! Кликните на комментарий, чтобы ответить на него.");
+  </script>
+</html>
