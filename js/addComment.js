@@ -2,9 +2,12 @@ import { comments } from "./data.js";
 
 import { renderComments } from "./render.js";
 
-import { getCurrentDateTime } from "./formatDate.js";
-
 import { escapeHtml } from "./escapeHtml.js";
+
+import {
+  postComment,
+  getComments,
+} from "./api.js";
 
 export function initAddComment() {
   const nameInput =
@@ -49,25 +52,54 @@ export function initAddComment() {
       return;
     }
 
-    comments.push({
+    addButton.disabled = true;
+
+    postComment({
       name: escapeHtml(
         nameInput.value.trim(),
       ),
 
-      date: getCurrentDateTime(),
-
       text: textInput.value.trim(),
+    })
+      .then(() => {
+        return getComments();
+      })
 
-      likes: 0,
+      .then((data) => {
+        const appComments =
+          data.comments.map(
+            (comment) => {
+              return {
+                name:
+                  comment.author.name,
 
-      isLiked: false,
-    });
+                date: new Date(
+                  comment.date,
+                ).toLocaleString(),
 
-    nameInput.value = "";
+                text: comment.text,
 
-    textInput.value = "";
+                likes: comment.likes,
 
-    renderComments();
+                isLiked: false,
+              };
+            },
+          );
+
+        comments.length = 0;
+
+        comments.push(...appComments);
+
+        renderComments();
+
+        nameInput.value = "";
+
+        textInput.value = "";
+      })
+
+      .finally(() => {
+        addButton.disabled = false;
+      });
   }
 
   addButton.addEventListener(
