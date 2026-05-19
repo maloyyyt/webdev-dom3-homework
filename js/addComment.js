@@ -1,7 +1,3 @@
-import { comments } from "./data.js";
-
-import { renderComments } from "./render.js";
-
 import { escapeHtml } from "./escapeHtml.js";
 
 import { postComment } from "./api.js";
@@ -9,6 +5,11 @@ import { postComment } from "./api.js";
 import { loadComments } from "./index.js";
 
 export function initAddComment() {
+  const addForm =
+    document.querySelector(
+      ".add-form",
+    );
+
   const nameInput =
     document.querySelector(
       ".add-form-name",
@@ -24,25 +25,15 @@ export function initAddComment() {
       ".add-form-button",
     );
 
-  const addForm =
-    document.querySelector(
-      ".add-form",
-    );
-
   function validateForm() {
     if (
-      nameInput.value.trim() === ""
-    ) {
-      alert("Введите имя");
-
-      return false;
-    }
-
-    if (
-      textInput.value.trim() === ""
+      nameInput.value.trim().length <
+        3 ||
+      textInput.value.trim().length <
+        3
     ) {
       alert(
-        "Введите комментарий",
+        "Имя и комментарий должны быть не короче 3 символов",
       );
 
       return false;
@@ -56,8 +47,21 @@ export function initAddComment() {
       return;
     }
 
-    addForm.innerHTML =
+    addForm.style.display = "none";
+
+    const loadingText =
+      document.createElement("div");
+
+    loadingText.textContent =
       "Комментарий добавляется...";
+
+    loadingText.classList.add(
+      "loading",
+    );
+
+    addForm.parentElement.appendChild(
+      loadingText,
+    );
 
     postComment({
       name: escapeHtml(
@@ -72,27 +76,38 @@ export function initAddComment() {
       })
 
       .then(() => {
-        addForm.innerHTML = `
-          <input
-            type="text"
-            class="add-form-name"
-            placeholder="Введите ваше имя"
-          />
+        nameInput.value = "";
 
-          <textarea
-            class="add-form-text"
-            placeholder="Введите ваш комментарий"
-            rows="4"
-          ></textarea>
+        textInput.value = "";
+      })
 
-          <div class="add-form-row">
-            <button class="add-form-button">
-              Написать
-            </button>
-          </div>
-        `;
+      .catch((error) => {
+        if (
+          error.message ===
+          "VALIDATION_ERROR"
+        ) {
+          alert(
+            "Имя и комментарий должны быть не короче 3 символов",
+          );
+        } else if (
+          error.message ===
+          "SERVER_ERROR"
+        ) {
+          alert(
+            "Сервер сломался, попробуй позже",
+          );
+        } else {
+          alert(
+            "Кажется, у вас сломался интернет, попробуйте позже",
+          );
+        }
+      })
 
-        initAddComment();
+      .finally(() => {
+        addForm.style.display =
+          "flex";
+
+        loadingText.remove();
       });
   }
 
