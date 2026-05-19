@@ -4,10 +4,9 @@ import { renderComments } from "./render.js";
 
 import { escapeHtml } from "./escapeHtml.js";
 
-import {
-  postComment,
-  getComments,
-} from "./api.js";
+import { postComment } from "./api.js";
+
+import { loadComments } from "./index.js";
 
 export function initAddComment() {
   const nameInput =
@@ -23,6 +22,11 @@ export function initAddComment() {
   const addButton =
     document.querySelector(
       ".add-form-button",
+    );
+
+  const addForm =
+    document.querySelector(
+      ".add-form",
     );
 
   function validateForm() {
@@ -52,7 +56,8 @@ export function initAddComment() {
       return;
     }
 
-    addButton.disabled = true;
+    addForm.innerHTML =
+      "Комментарий добавляется...";
 
     postComment({
       name: escapeHtml(
@@ -61,44 +66,33 @@ export function initAddComment() {
 
       text: textInput.value.trim(),
     })
+
       .then(() => {
-        return getComments();
+        return loadComments();
       })
 
-      .then((data) => {
-        const appComments =
-          data.comments.map(
-            (comment) => {
-              return {
-                name:
-                  comment.author.name,
+      .then(() => {
+        addForm.innerHTML = `
+          <input
+            type="text"
+            class="add-form-name"
+            placeholder="Введите ваше имя"
+          />
 
-                date: new Date(
-                  comment.date,
-                ).toLocaleString(),
+          <textarea
+            class="add-form-text"
+            placeholder="Введите ваш комментарий"
+            rows="4"
+          ></textarea>
 
-                text: comment.text,
+          <div class="add-form-row">
+            <button class="add-form-button">
+              Написать
+            </button>
+          </div>
+        `;
 
-                likes: comment.likes,
-
-                isLiked: false,
-              };
-            },
-          );
-
-        comments.length = 0;
-
-        comments.push(...appComments);
-
-        renderComments();
-
-        nameInput.value = "";
-
-        textInput.value = "";
-      })
-
-      .finally(() => {
-        addButton.disabled = false;
+        initAddComment();
       });
   }
 
