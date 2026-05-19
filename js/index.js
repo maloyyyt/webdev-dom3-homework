@@ -15,6 +15,7 @@ export function loadComments() {
   );
 
   return getComments()
+
     .then((data) => {
       const appComments =
         data.comments.map((comment) => {
@@ -37,6 +38,21 @@ export function loadComments() {
       setComments(appComments);
 
       renderComments();
+    })
+
+    .catch((error) => {
+      if (
+        error.message ===
+        "SERVER_ERROR"
+      ) {
+        alert(
+          "Сервер сломался, попробуй позже",
+        );
+      } else {
+        alert(
+          "Кажется, у вас сломался интернет, попробуйте позже",
+        );
+      }
     })
 
     .finally(() => {
