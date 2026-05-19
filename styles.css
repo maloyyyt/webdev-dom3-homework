@@ -237,3 +237,13 @@ body {
   font-style: italic;
   line-height: 1.5;
 }
+
+.loading {
+  font-size: 32px;
+  margin-top: 40px;
+  color: #bcec30;
+}
+
+.hidden {
+  display: none;
+}

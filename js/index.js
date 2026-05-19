@@ -6,28 +6,46 @@ import { getComments } from "./api.js";
 
 import { setComments } from "./data.js";
 
-getComments().then((data) => {
-  const appComments = data.comments.map(
-    (comment) => {
-      return {
-        name: comment.author.name,
+const loadingElement =
+  document.querySelector(".loading");
 
-        date: new Date(
-          comment.date,
-        ).toLocaleString(),
-
-        text: comment.text,
-
-        likes: comment.likes,
-
-        isLiked: false,
-      };
-    },
+export function loadComments() {
+  loadingElement.classList.remove(
+    "hidden",
   );
 
-  setComments(appComments);
+  return getComments()
+    .then((data) => {
+      const appComments =
+        data.comments.map((comment) => {
+          return {
+            name:
+              comment.author.name,
 
-  renderComments();
-});
+            date: new Date(
+              comment.date,
+            ).toLocaleString(),
+
+            text: comment.text,
+
+            likes: comment.likes,
+
+            isLiked: false,
+          };
+        });
+
+      setComments(appComments);
+
+      renderComments();
+    })
+
+    .finally(() => {
+      loadingElement.classList.add(
+        "hidden",
+      );
+    });
+}
+
+loadComments();
 
 initAddComment();
