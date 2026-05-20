@@ -1,131 +1,67 @@
-import { escapeHtml } from "./escapeHtml.js";
-
 import { postComment } from "./api.js";
-
 import { loadComments } from "./index.js";
 
-export function initAddComment() {
-  const addForm =
-    document.querySelector(
-      ".add-form",
-    );
+export function initAddComment(user) {
+  const form = document.querySelector(".add-form");
 
-  const nameInput =
-    document.querySelector(
-      ".add-form-name",
-    );
+  const nameInput = document.querySelector(".add-form-name");
+  const textInput = document.querySelector(".add-form-text");
+  const button = document.querySelector(".add-form-button");
 
-  const textInput =
-    document.querySelector(
-      ".add-form-text",
-    );
+  if (!user) {
+    form.innerHTML = `
+      <a href="#">Чтобы добавить комментарий, авторизуйтесь</a>
+    `;
+    return;
+  }
 
-  const addButton =
-    document.querySelector(
-      ".add-form-button",
-    );
+  nameInput.value = user.name;
+  nameInput.readOnly = true;
 
-  function validateForm() {
+  function validate() {
     if (
-      nameInput.value.trim().length <
-        3 ||
-      textInput.value.trim().length <
-        3
+      nameInput.value.trim().length < 3 ||
+      textInput.value.trim().length < 3
     ) {
       alert(
         "Имя и комментарий должны быть не короче 3 символов",
       );
-
       return false;
     }
-
     return true;
   }
 
   function addComment() {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validate()) return;
 
-    addForm.style.display = "none";
+    form.style.display = "none";
 
-    const loadingText =
-      document.createElement("div");
-
-    loadingText.textContent =
-      "Комментарий добавляется...";
-
-    loadingText.classList.add(
-      "loading",
-    );
-
-    addForm.parentElement.appendChild(
-      loadingText,
-    );
+    const loading = document.createElement("div");
+    loading.textContent = "Комментарий добавляется...";
+    form.parentElement.appendChild(loading);
 
     postComment({
-      name: escapeHtml(
-        nameInput.value.trim(),
-      ),
-
       text: textInput.value.trim(),
     })
-
-      .then(() => {
-        return loadComments();
-      })
-
-      .then(() => {
-        nameInput.value = "";
-
-        textInput.value = "";
-      })
-
-      .catch((error) => {
-        if (
-          error.message ===
-          "VALIDATION_ERROR"
-        ) {
-          alert(
-            "Имя и комментарий должны быть не короче 3 символов",
-          );
-        } else if (
-          error.message ===
-          "SERVER_ERROR"
-        ) {
-          alert(
-            "Сервер сломался, попробуй позже",
-          );
+      .then(() => loadComments())
+      .catch((err) => {
+        if (err.message === "SERVER_ERROR") {
+          alert("Сервер сломался, попробуй позже");
         } else {
-          alert(
-            "Кажется, у вас сломался интернет, попробуйте позже",
-          );
+          alert("Кажется, у вас сломался интернет, попробуйте позже");
         }
       })
-
       .finally(() => {
-        addForm.style.display =
-          "flex";
-
-        loadingText.remove();
+        form.style.display = "flex";
+        loading.remove();
       });
   }
 
-  addButton.addEventListener(
-    "click",
-    addComment,
-  );
+  button.addEventListener("click", addComment);
 
-  textInput.addEventListener(
-    "keydown",
-    (event) => {
-      if (
-        (event.ctrlKey ||
-          event.metaKey) &&
-        event.key === "Enter"
-      ) {
-        addComment();
-      }
-    },
-  );
+  textInput.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      addComment();
+    }
+  });
 }
