@@ -1,67 +1,45 @@
 import { renderComments } from "./render.js";
-
 import { initAddComment } from "./addComment.js";
-
-import { getComments } from "./api.js";
-
+import { getComments, setToken } from "./api.js";
 import { setComments } from "./data.js";
+import { getUser } from "./storage.js";
+import { renderLogin } from "./login.js";
 
 const loadingElement =
   document.querySelector(".loading");
 
-export function loadComments() {
-  loadingElement.classList.remove(
-    "hidden",
-  );
+function loadComments() {
+  loadingElement?.classList.remove("hidden");
 
   return getComments()
-
     .then((data) => {
-      const appComments =
-        data.comments.map((comment) => {
-          return {
-            name:
-              comment.author.name,
-
-            date: new Date(
-              comment.date,
-            ).toLocaleString(),
-
-            text: comment.text,
-
-            likes: comment.likes,
-
-            isLiked: false,
-          };
-        });
-
-      setComments(appComments);
-
+      setComments(data.comments);
       renderComments();
     })
-
     .catch((error) => {
-      if (
-        error.message ===
-        "SERVER_ERROR"
-      ) {
-        alert(
-          "Сервер сломался, попробуй позже",
-        );
+      if (error.message === "SERVER_ERROR") {
+        alert("Сервер сломался, попробуй позже");
       } else {
-        alert(
-          "Кажется, у вас сломался интернет, попробуйте позже",
-        );
+        alert("Проблемы с интернетом, попробуйте позже");
       }
     })
-
     .finally(() => {
-      loadingElement.classList.add(
-        "hidden",
-      );
+      loadingElement?.classList.add("hidden");
     });
 }
 
-loadComments();
+function startApp() {
+  const user = getUser();
 
-initAddComment();
+  if (!user) {
+    renderLogin(startApp);
+    return;
+  }
+
+  setToken(user.token);
+
+  loadComments();
+  initAddComment(user);
+}
+
+startApp();
